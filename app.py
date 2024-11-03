@@ -1,4 +1,4 @@
-# streamlit_app.py
+# app.py
 
 import streamlit as st
 import numpy as np
@@ -88,3 +88,4 @@ ax.set_title("Acetaminophen Nomogram")
 ax.legend()
 
 st.pyplot(fig)
+
