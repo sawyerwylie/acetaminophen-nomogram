@@ -56,18 +56,18 @@ def plot_nomogram_final_with_legend(concentration, time_from_ingestion):
 
     return fig
 
-# Function to calculate "Equivalent concentration @ 4 hours" based on spreadsheet logic
+# Function to calculate "Equivalent concentration @ 4 hours" to the hundredth decimal place
 def calculate_equivalent_4hr_concentration(concentration, time_from_ingestion):
     if time_from_ingestion >= 4:
         result = concentration * (2 ** ((time_from_ingestion - 4) / 4))
     else:
         result = "Invalid time"
-    return round(result, 6) if isinstance(result, float) else result
+    return round(result, 2) if isinstance(result, float) else result
 
-# Function to calculate "Threshold [APAP] (mcg/mL) for treatment at this time" based on spreadsheet logic
+# Function to calculate "Threshold [APAP] (mcg/mL) for treatment at this time" to the hundredth decimal place
 def calculate_threshold_concentration(time_from_ingestion):
     if time_from_ingestion >= 4:
-        return round(150 * (2 ** ((4 - time_from_ingestion) / 4)), 6)
+        return round(150 * (2 ** ((4 - time_from_ingestion) / 4)), 2)
     else:
         return "Invalid time"
 
