@@ -1,6 +1,5 @@
 # app.py
 
-# Import necessary libraries
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,11 +12,12 @@ line_300_points = [300, 150, 75, 37.5, 18.75]
 line_450_points = [450, 225, 112.5, 56.25, 28.125]
 line_600_points = [600, 300, 150, 75, 37.5]
 
-# Function to create the "final graph" with all specified points, labels, and configurations
+# Cache the plotting function to reduce re-rendering times
+@st.cache(allow_output_mutation=True)
 def plot_nomogram_final_with_legend(concentration, time_from_ingestion):
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    # Plot each threshold line with points from "Sheet2"
+    # Plot each threshold line
     ax.plot(hours, line_150_points, color="red", linestyle="--", linewidth=1.5, label="150 mcg/mL Threshold")
     ax.plot(hours, line_300_points, color="orange", linestyle="--", linewidth=1.5, label="300 mcg/mL Threshold")
     ax.plot(hours, line_450_points, color="purple", linestyle="--", linewidth=1.5, label="450 mcg/mL Threshold")
@@ -34,16 +34,16 @@ def plot_nomogram_final_with_legend(concentration, time_from_ingestion):
     ax.scatter(time_from_ingestion, concentration, color="black", s=50, marker='x', label="Current Patient", zorder=5)
     ax.text(time_from_ingestion, concentration + 10, f"{concentration} mcg/mL", color="black", fontsize=10, ha='center')
 
-    # Set the y-axis to a logarithmic scale for visually straight, parallel lines
+    # Set the y-axis to a logarithmic scale
     ax.set_yscale("log")
 
-    # Custom y-axis labels to match specific concentrations from "Sheet2"
+    # Custom y-axis labels to match concentrations
     custom_y_ticks = [600, 450, 300, 150, 75, 37.5, 18.75, 9.375]
     custom_y_labels = ["600", "450", "300", "150", "75", "37.5", "18.75", "9.375"]
     ax.set_yticks(custom_y_ticks)
     ax.set_yticklabels(custom_y_labels)
 
-    # Set x-axis limits and ticks for time in hours
+    # Set x-axis limits and ticks
     ax.set_xlim(4, 20)
     ax.set_xticks(np.arange(4, 21, 2))
 
@@ -56,7 +56,7 @@ def plot_nomogram_final_with_legend(concentration, time_from_ingestion):
 
     return fig
 
-# Supporting functions to calculate equivalent 4-hour concentration, toxicity time, and NAC recommendation
+# Supporting functions for calculations
 def calculate_equivalent_4hr_concentration(concentration, time_from_ingestion):
     result = concentration * (2 ** ((time_from_ingestion - 4) / 4)) if time_from_ingestion >= 4 else "Invalid time"
     return round(result, 1) if isinstance(result, float) else result
@@ -91,20 +91,21 @@ st.title("Acetaminophen Nomogram Calculator")
 concentration = st.number_input("Enter Acetaminophen Concentration (mcg/mL):", min_value=0.0)
 time_from_ingestion = st.number_input("Enter Time from Ingestion (hours):", min_value=4.0, max_value=20.0)
 
-# Perform calculations for equivalent concentration, toxicity time, and NAC recommendation
-equiv_concentration_4hr = calculate_equivalent_4hr_concentration(concentration, time_from_ingestion)
-toxicity_time = calculate_toxicity_time(concentration)
-nomogram_zone = determine_nomogram_zone(equiv_concentration_4hr)
-nac_recommendation = nac_treatment_recommendation(nomogram_zone, time_from_ingestion)
+# Display a button to calculate and render outputs only when clicked
+if st.button("Calculate"):
+    # Perform calculations for equivalent concentration, toxicity time, and NAC recommendation
+    equiv_concentration_4hr = calculate_equivalent_4hr_concentration(concentration, time_from_ingestion)
+    toxicity_time = calculate_toxicity_time(concentration)
+    nomogram_zone = determine_nomogram_zone(equiv_concentration_4hr)
+    nac_recommendation = nac_treatment_recommendation(nomogram_zone, time_from_ingestion)
 
-# Display the results
-st.subheader("Results")
-st.write(f"Equivalent Concentration at 4 Hours: {equiv_concentration_4hr}")
-st.write(f"Estimated Toxicity Time: {toxicity_time} hours")
-st.write(f"Nomogram Zone: {nomogram_zone}")
-st.write(f"NAC Treatment Recommendation: {nac_recommendation}")
+    # Display the results
+    st.subheader("Results")
+    st.write(f"Equivalent Concentration at 4 Hours: {equiv_concentration_4hr}")
+    st.write(f"Estimated Toxicity Time: {toxicity_time} hours")
+    st.write(f"Nomogram Zone: {nomogram_zone}")
+    st.write(f"NAC Treatment Recommendation: {nac_recommendation}")
 
-# Display the final graph with the patient's data point if inputs are provided
-if concentration and time_from_ingestion:
+    # Display the final graph with the patient's data point if inputs are provided
     fig = plot_nomogram_final_with_legend(concentration, time_from_ingestion)
     st.pyplot(fig)
