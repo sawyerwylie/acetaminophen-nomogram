@@ -13,7 +13,7 @@ line_450_points = [450, 225, 112.5, 56.25, 28.125]
 line_600_points = [600, 300, 150, 75, 37.5]
 
 # Cache the plotting function to reduce re-rendering times
-@st.cache(allow_output_mutation=True)
+@st.cache_resource
 def plot_nomogram_final_with_legend(concentration, time_from_ingestion):
     fig, ax = plt.subplots(figsize=(8, 6))
 
