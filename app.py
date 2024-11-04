@@ -75,17 +75,27 @@ st.write(f"Time (hours) for Toxicity: {time_for_toxicity}")
 st.write(f"Threshold [APAP] (mcg/mL) for Treatment: {threshold_concentration:.2f}")
 
 # 4. Nomogram Plot
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(8, 6))
+
+# Set up x-axis and y-axis range with fixed limits
 time_vals = np.linspace(0, 24, 100)
 threshold_vals = 150 * np.exp(-0.3 * time_vals)
 
-# Plot threshold and patient point
-ax.plot(time_vals, threshold_vals, label="Treatment Threshold", color="red")
-ax.scatter(time_from_ingestion, concentration, color="blue", label="Patient Data Point")
-ax.set_xlabel("Time from Ingestion (hours)")
-ax.set_ylabel("Acetaminophen Concentration (mcg/mL)")
-ax.set_title("Acetaminophen Nomogram")
-ax.legend()
+# Plot the treatment threshold line
+ax.plot(time_vals, threshold_vals, label="Treatment Threshold", color="red", linestyle="--")
+
+# Plot the patient's data point
+ax.scatter(time_from_ingestion, concentration, color="blue", label="Patient Data Point", zorder=5)
+
+# Set axis limits and labels for clarity
+ax.set_xlim(0, 24)
+ax.set_ylim(0, 300)
+ax.set_xlabel("Time from Ingestion (hours)", fontsize=12)
+ax.set_ylabel("Acetaminophen Concentration (mcg/mL)", fontsize=12)
+
+# Title and legend
+ax.set_title("Acetaminophen Nomogram", fontsize=14, weight='bold')
+ax.legend(loc="upper right")
+ax.grid(True)
 
 st.pyplot(fig)
-
