@@ -73,7 +73,7 @@ def plot_nomogram(concentration, time_from_ingestion):
 
     return fig
 
-# Supporting calculations for Equivalent 4-Hour Concentration, Toxicity Time, and NAC Recommendation
+# Supporting calculations for Equivalent 4-Hour Concentration, Toxicity Time, and NAC Treatment Recommendation
 def calculate_equivalent_4hr_concentration(concentration, time_from_ingestion):
     return concentration * (2 ** ((time_from_ingestion - 4) / 4)) if time_from_ingestion >= 4 else "Invalid time"
 
@@ -92,6 +92,14 @@ def determine_nomogram_zone(equiv_conc):
     else:
         return "Critical Zone"
 
+def nac_treatment_recommendation(nomogram_zone, time_from_ingestion):
+    if nomogram_zone in ["High Risk", "Very High Risk", "Critical Zone"]:
+        return "Yes, NAC treatment indicated"
+    elif nomogram_zone == "Moderate Risk" and time_from_ingestion <= 8:
+        return "Yes, NAC treatment indicated with monitoring"
+    else:
+        return "No NAC treatment needed"
+
 # Streamlit App
 st.title("Acetaminophen Nomogram Calculator")
 
@@ -99,16 +107,18 @@ st.title("Acetaminophen Nomogram Calculator")
 concentration = st.number_input("Enter Acetaminophen Concentration (mcg/mL):", min_value=0.0)
 time_from_ingestion = st.number_input("Enter Time from Ingestion (hours):", min_value=4.0, max_value=20.0)
 
-# Calculate Equivalent 4-Hour Concentration, Toxicity Time, and Nomogram Zone
+# Calculate Equivalent 4-Hour Concentration, Toxicity Time, Nomogram Zone, and NAC Treatment Recommendation
 equiv_concentration_4hr = calculate_equivalent_4hr_concentration(concentration, time_from_ingestion)
 toxicity_time = calculate_toxicity_time(concentration)
 nomogram_zone = determine_nomogram_zone(equiv_concentration_4hr)
+nac_recommendation = nac_treatment_recommendation(nomogram_zone, time_from_ingestion)
 
 # Display the calculated values
 st.subheader("Results")
 st.write(f"Equivalent Concentration at 4 Hours: {equiv_concentration_4hr}")
 st.write(f"Estimated Toxicity Time: {toxicity_time} hours")
 st.write(f"Nomogram Zone: {nomogram_zone}")
+st.write(f"NAC Treatment Recommendation: {nac_recommendation}")
 
 # Display the nomogram plot
 if concentration and time_from_ingestion:
