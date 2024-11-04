@@ -73,30 +73,32 @@ def plot_nomogram(concentration, time_from_ingestion):
 
     return fig
 
-# Supporting calculations for Equivalent 4-Hour Concentration, Toxicity Time, and NAC Treatment Recommendation
+# Supporting calculations with rounding and terminology matching Google Sheet
 def calculate_equivalent_4hr_concentration(concentration, time_from_ingestion):
-    return concentration * (2 ** ((time_from_ingestion - 4) / 4)) if time_from_ingestion >= 4 else "Invalid time"
+    result = concentration * (2 ** ((time_from_ingestion - 4) / 4)) if time_from_ingestion >= 4 else "Invalid time"
+    return round(result, 1) if isinstance(result, float) else result
 
 def calculate_toxicity_time(concentration):
-    return 32.9155 - 13.2878 * math.log10(concentration) if concentration > 0 else "Invalid concentration"
+    result = 32.9155 - 13.2878 * math.log10(concentration) if concentration > 0 else "Invalid concentration"
+    return round(result, 1) if isinstance(result, float) else result
 
 def determine_nomogram_zone(equiv_conc):
     if equiv_conc < 150:
-        return "Low Risk"
+        return "Below Treatment Line"
     elif 150 <= equiv_conc < 300:
-        return "Moderate Risk"
+        return "Possible Risk Line"
     elif 300 <= equiv_conc < 450:
-        return "High Risk"
+        return "High Risk Line"
     elif 450 <= equiv_conc < 600:
-        return "Very High Risk"
+        return "Very High Risk Line"
     else:
         return "Critical Zone"
 
+# Simplified NAC Recommendation
 def nac_treatment_recommendation(nomogram_zone, time_from_ingestion):
-    if nomogram_zone in ["High Risk", "Very High Risk", "Critical Zone"]:
+    if nomogram_zone in ["High Risk Line", "Very High Risk Line", "Critical Zone"] or (
+        nomogram_zone == "Possible Risk Line" and time_from_ingestion <= 8):
         return "Yes, NAC treatment indicated"
-    elif nomogram_zone == "Moderate Risk" and time_from_ingestion <= 8:
-        return "Yes, NAC treatment indicated with monitoring"
     else:
         return "No NAC treatment needed"
 
