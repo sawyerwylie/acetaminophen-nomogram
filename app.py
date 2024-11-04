@@ -5,97 +5,112 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-# 1. Input Fields
+# Constants for slopes and starting y-values based on given specifications
+slope_600 = (37.5 - 600) / (20 - 4)  # Slope for the 600 mcg/mL line
+slope_450 = (28.125 - 450) / (20 - 4)  # Slope for the 450 mcg/mL line
+slope_300 = (18.75 - 300) / (20 - 4)  # Slope for the 300 mcg/mL line
+slope_150 = (9.375 - 150) / (20 - 4)  # Slope for the 150 mcg/mL line
+
+# Function to create the nomogram plot
+def plot_nomogram(concentration, time_from_ingestion):
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    # Define time values from 4 to 20 hours
+    time_vals = np.linspace(4, 20, 100)
+
+    # Define the threshold lines
+    line_600 = 600 + slope_600 * (time_vals - 4)
+    line_450 = 450 + slope_450 * (time_vals - 4)
+    line_300 = 300 + slope_300 * (time_vals - 4)
+    line_150 = 150 + slope_150 * (time_vals - 4)
+
+    # Plot each threshold line with colors and labels
+    ax.plot(time_vals, line_600, color="brown", linestyle="--", linewidth=1.5, label="600 mcg/mL Threshold")
+    ax.plot(time_vals, line_450, color="purple", linestyle="--", linewidth=1.5, label="450 mcg/mL Threshold")
+    ax.plot(time_vals, line_300, color="orange", linestyle="--", linewidth=1.5, label="300 mcg/mL Threshold")
+    ax.plot(time_vals, line_150, color="red", linestyle="--", linewidth=1.5, label="150 mcg/mL Threshold")
+
+    # Calculate and annotate y-values at 8, 12, 16, and 20 hours with staggered positions at 20 hours
+    for hour in [8, 12, 16, 20]:
+        y_600 = 600 + slope_600 * (hour - 4)
+        y_450 = 450 + slope_450 * (hour - 4)
+        y_300 = 300 + slope_300 * (hour - 4)
+        y_150 = 150 + slope_150 * (hour - 4)
+
+        # Regular label positions for 8, 12, and 16 hours
+        ax.text(hour, y_600, f"{y_600:.1f}", color="brown", fontsize=9, ha='center')
+        ax.text(hour, y_450, f"{y_450:.1f}", color="purple", fontsize=9, ha='center')
+        ax.text(hour, y_300, f"{y_300:.1f}", color="orange", fontsize=9, ha='center')
+        ax.text(hour, y_150, f"{y_150:.1f}", color="red", fontsize=9, ha='center')
+
+        # Staggered positions for the 20-hour mark to avoid overlap
+        if hour == 20:
+            ax.text(hour, y_600 + 10, f"{y_600:.1f}", color="brown", fontsize=9, ha='center')  # Slightly above
+            ax.text(hour, y_450 + 5, f"{y_450:.1f}", color="purple", fontsize=9, ha='center')   # Slightly above
+            ax.text(hour, y_300, f"{y_300:.1f}", color="orange", fontsize=9, ha='center')       # Centered
+            ax.text(hour, y_150 - 5, f"{y_150:.1f}", color="red", fontsize=9, ha='center')      # Slightly below
+
+    # Plot the patient data point and label it
+    ax.scatter(time_from_ingestion, concentration, color="black", s=50, zorder=5)
+    ax.text(time_from_ingestion, concentration + 10, f"{concentration} mcg/mL", color="black", fontsize=10, ha='center')
+
+    # Custom y-axis ticks to match non-linear spacing, starting from 0
+    y_ticks = [0, 100, 150, 225, 300, 375, 450, 525, 600, 700]
+    y_labels = ["0", "100", "150", "225", "300", "375", "450", "525", "600", "700"]
+    ax.set_yticks(y_ticks)
+    ax.set_yticklabels(y_labels)
+
+    # Set x-axis limits and ticks from 4 to 20 hours
+    ax.set_xlim(4, 20)
+    ax.set_xticks(np.arange(4, 21, 2))
+
+    # Title, labels, grid, and legend
+    ax.set_xlabel("Time from Ingestion (hours)", fontsize=12)
+    ax.set_ylabel("Acetaminophen Concentration (mcg/mL)", fontsize=12)
+    ax.set_title("Acetaminophen Nomogram", fontsize=14, weight='bold')
+    ax.grid(True, linestyle=':', linewidth=0.5)
+    ax.legend(loc="upper right", fontsize=10)
+
+    return fig
+
+# Supporting calculations for Equivalent 4-Hour Concentration, Toxicity Time, and NAC Recommendation
+def calculate_equivalent_4hr_concentration(concentration, time_from_ingestion):
+    return concentration * (2 ** ((time_from_ingestion - 4) / 4)) if time_from_ingestion >= 4 else "Invalid time"
+
+def calculate_toxicity_time(concentration):
+    return 32.9155 - 13.2878 * math.log10(concentration) if concentration > 0 else "Invalid concentration"
+
+def determine_nomogram_zone(equiv_conc):
+    if equiv_conc < 150:
+        return "Low Risk"
+    elif 150 <= equiv_conc < 300:
+        return "Moderate Risk"
+    elif 300 <= equiv_conc < 450:
+        return "High Risk"
+    elif 450 <= equiv_conc < 600:
+        return "Very High Risk"
+    else:
+        return "Critical Zone"
+
+# Streamlit App
 st.title("Acetaminophen Nomogram Calculator")
 
-# Input for concentration and time
+# Input fields for concentration and time
 concentration = st.number_input("Enter Acetaminophen Concentration (mcg/mL):", min_value=0.0)
-time_from_ingestion = st.number_input("Enter Time from Ingestion (hours):", min_value=0.0)
+time_from_ingestion = st.number_input("Enter Time from Ingestion (hours):", min_value=4.0, max_value=20.0)
 
-# 2. Calculations based on Excel formulas
+# Calculate Equivalent 4-Hour Concentration, Toxicity Time, and Nomogram Zone
+equiv_concentration_4hr = calculate_equivalent_4hr_concentration(concentration, time_from_ingestion)
+toxicity_time = calculate_toxicity_time(concentration)
+nomogram_zone = determine_nomogram_zone(equiv_concentration_4hr)
 
-# Equivalent concentration at 4 hours (based on Excel formula)
-if concentration == 0 or time_from_ingestion == 0:
-    equiv_concentration_4h = "Enter Data"
-else:
-    equiv_concentration_4h = concentration * (2 ** ((time_from_ingestion - 4) / 4))
-
-# Nomogram Zone Classification
-if equiv_concentration_4h == "Enter Data":
-    nomogram_zone = "Enter Data"
-else:
-    if equiv_concentration_4h < 150:
-        nomogram_zone = "<150"
-    elif 150 <= equiv_concentration_4h < 300:
-        nomogram_zone = "150-300"
-    elif 300 <= equiv_concentration_4h < 450:
-        nomogram_zone = "300-450"
-    elif 450 <= equiv_concentration_4h < 600:
-        nomogram_zone = "450-600"
-    else:
-        nomogram_zone = ">600"
-
-# NAC Treatment Recommendation based on Nomogram Zone and Time
-if nomogram_zone == "Enter Data":
-    nac_treatment = "Enter Data"
-else:
-    if nomogram_zone == "<150":
-        nac_treatment = "No treatment indicated"
-    elif nomogram_zone == "150-300":
-        nac_treatment = "Yes, routine dosing"
-    elif nomogram_zone in ["300-450", "450-600", ">600"] and time_from_ingestion <= 8:
-        nac_treatment = "Yes, double dosing"
-    else:
-        nac_treatment = "Yes, routine dosing"
-
-# Dosing Modification based on NAC Treatment
-dosing_modification = "Double dose of 3rd bag to 200 mg/kg (12.5 mg/kg/h)" if nac_treatment == "Yes, double dosing" else "None"
-
-# Toxicologist Recommendation for High Concentrations
-toxicologist_recommendation = "Call toxicologist for additional recommendations" if concentration >= 600 else ""
-
-# Time for Toxicity (using Excel's logarithmic relationship)
-if concentration == 0:
-    time_for_toxicity = "Enter Data"
-else:
-    toxicity_time_value = 32.9155 - 13.2878 * math.log10(concentration)
-    time_for_toxicity = toxicity_time_value if toxicity_time_value > 4 else "-"
-
-# Threshold concentration for treatment (from cell B5 formula)
-threshold_concentration = math.exp(5.298317 - (time_from_ingestion - 4) * 0.1732868) * 0.75
-
-# 3. Display Calculations
+# Display the calculated values
 st.subheader("Results")
-st.write(f"Equivalent Concentration at 4 Hours: {equiv_concentration_4h}")
+st.write(f"Equivalent Concentration at 4 Hours: {equiv_concentration_4hr}")
+st.write(f"Estimated Toxicity Time: {toxicity_time} hours")
 st.write(f"Nomogram Zone: {nomogram_zone}")
-st.write(f"NAC Treatment: {nac_treatment}")
-st.write(f"Dosing Modification: {dosing_modification}")
-st.write(f"Toxicologist Recommendation: {toxicologist_recommendation}")
-st.write(f"Time (hours) for Toxicity: {time_for_toxicity}")
-st.write(f"Threshold [APAP] (mcg/mL) for Treatment: {threshold_concentration:.2f}")
 
-# 4. Nomogram Plot
-fig, ax = plt.subplots(figsize=(8, 6))
-
-# Set up x-axis and y-axis range with fixed limits
-time_vals = np.linspace(0, 24, 100)
-threshold_vals = 150 * np.exp(-0.3 * time_vals)
-
-# Plot the treatment threshold line
-ax.plot(time_vals, threshold_vals, label="Treatment Threshold", color="red", linestyle="--")
-
-# Plot the patient's data point
-ax.scatter(time_from_ingestion, concentration, color="blue", label="Patient Data Point", zorder=5)
-
-# Set axis limits and labels for clarity
-ax.set_xlim(0, 24)
-ax.set_ylim(0, 300)
-ax.set_xlabel("Time from Ingestion (hours)", fontsize=12)
-ax.set_ylabel("Acetaminophen Concentration (mcg/mL)", fontsize=12)
-
-# Title and legend
-ax.set_title("Acetaminophen Nomogram", fontsize=14, weight='bold')
-ax.legend(loc="upper right")
-ax.grid(True)
-
-st.pyplot(fig)
+# Display the nomogram plot
+if concentration and time_from_ingestion:
+    fig = plot_nomogram(concentration, time_from_ingestion)
+    st.pyplot(fig)
