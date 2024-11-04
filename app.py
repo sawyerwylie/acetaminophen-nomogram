@@ -71,6 +71,14 @@ def calculate_threshold_concentration(time_from_ingestion):
     else:
         return "Invalid time"
 
+# Function to calculate "Time (hours) this [APAP] would otherwise be toxic"
+def calculate_toxicity_time(concentration):
+    if concentration > 0:
+        result = 32.9155 - 13.2878 * math.log10(concentration)
+    else:
+        result = "Invalid concentration"
+    return round(result, 2) if isinstance(result, float) else result
+
 # Determine Nomogram Zone based on equivalent concentration thresholds
 def determine_nomogram_zone(equiv_conc):
     if isinstance(equiv_conc, str):
@@ -102,9 +110,10 @@ time_from_ingestion = st.number_input("Enter Time from Ingestion (hours):", min_
 
 # Display a button to calculate and render outputs only when clicked
 if st.button("Calculate"):
-    # Perform calculations for equivalent concentration, threshold concentration, nomogram zone, NAC recommendation
+    # Perform calculations for equivalent concentration, threshold concentration, nomogram zone, NAC recommendation, and toxicity time
     equiv_concentration_4hr = calculate_equivalent_4hr_concentration(concentration, time_from_ingestion)
     threshold_concentration = calculate_threshold_concentration(time_from_ingestion)
+    toxicity_time = calculate_toxicity_time(concentration)
     nomogram_zone = determine_nomogram_zone(equiv_concentration_4hr)
     nac_recommendation = nac_treatment_recommendation(nomogram_zone, time_from_ingestion)
 
@@ -112,6 +121,7 @@ if st.button("Calculate"):
     st.subheader("Results")
     st.write(f"Equivalent Concentration @ 4 Hours: {equiv_concentration_4hr}")
     st.write(f"Threshold [APAP] (mcg/mL) for treatment at this time: {threshold_concentration}")
+    st.write(f"Time (hours) this [APAP] would otherwise be toxic: {toxicity_time}")
     st.write(f"Nomogram Zone: {nomogram_zone}")
     st.write(f"NAC Treatment Recommendation: {nac_recommendation}")
 
