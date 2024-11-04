@@ -56,31 +56,34 @@ def plot_nomogram_final_with_legend(concentration, time_from_ingestion):
 
     return fig
 
-# Supporting functions for calculations
+# Supporting functions to calculate equivalent concentration, toxicity time, and NAC recommendation based on sheet logic
 def calculate_equivalent_4hr_concentration(concentration, time_from_ingestion):
-    result = concentration * (2 ** ((time_from_ingestion - 4) / 4)) if time_from_ingestion >= 4 else "Invalid time"
-    return round(result, 1) if isinstance(result, float) else result
-
-def calculate_toxicity_time(concentration):
-    result = 32.9155 - 13.2878 * math.log10(concentration) if concentration > 0 else "Invalid concentration"
-    return round(result, 1) if isinstance(result, float) else result
+    # Replicate sheet logic for equivalent concentration calculation
+    if time_from_ingestion >= 4:
+        result = concentration * (2 ** ((time_from_ingestion - 4) / 4))
+    else:
+        result = "Invalid time"
+    return round(result, 6) if isinstance(result, float) else result  # High precision to match sheet
 
 def determine_nomogram_zone(equiv_conc):
-    if equiv_conc < 150:
+    # Exact zone names as per the sheet's designations
+    if isinstance(equiv_conc, str):  # Invalid entry handling
+        return "Invalid concentration"
+    elif equiv_conc < 150:
         return "Below Treatment Line"
     elif 150 <= equiv_conc < 300:
-        return "Possible Risk Line"
+        return "150-300"
     elif 300 <= equiv_conc < 450:
-        return "High Risk Line"
+        return "300-450"
     elif 450 <= equiv_conc < 600:
-        return "Very High Risk Line"
+        return "450-600"
     else:
-        return "Critical Zone"
+        return ">600"
 
 def nac_treatment_recommendation(nomogram_zone, time_from_ingestion):
-    if nomogram_zone in ["High Risk Line", "Very High Risk Line", "Critical Zone"] or (
-        nomogram_zone == "Possible Risk Line" and time_from_ingestion <= 8):
-        return "Yes, NAC treatment indicated"
+    # Treatment recommendations aligned with sheet rules and wording
+    if nomogram_zone in ["300-450", "450-600", ">600"] or (nomogram_zone == "150-300" and time_from_ingestion <= 16):
+        return "Yes, routine dosing"
     else:
         return "No NAC treatment needed"
 
@@ -95,14 +98,12 @@ time_from_ingestion = st.number_input("Enter Time from Ingestion (hours):", min_
 if st.button("Calculate"):
     # Perform calculations for equivalent concentration, toxicity time, and NAC recommendation
     equiv_concentration_4hr = calculate_equivalent_4hr_concentration(concentration, time_from_ingestion)
-    toxicity_time = calculate_toxicity_time(concentration)
     nomogram_zone = determine_nomogram_zone(equiv_concentration_4hr)
     nac_recommendation = nac_treatment_recommendation(nomogram_zone, time_from_ingestion)
 
     # Display the results
     st.subheader("Results")
-    st.write(f"Equivalent Concentration at 4 Hours: {equiv_concentration_4hr}")
-    st.write(f"Estimated Toxicity Time: {toxicity_time} hours")
+    st.write(f"Equivalent Concentration @ 4 Hours: {equiv_concentration_4hr}")
     st.write(f"Nomogram Zone: {nomogram_zone}")
     st.write(f"NAC Treatment Recommendation: {nac_recommendation}")
 
